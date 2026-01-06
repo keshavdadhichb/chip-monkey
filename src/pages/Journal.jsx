@@ -1,9 +1,11 @@
+```javascript
 import React, { useState, useEffect, useMemo } from 'react';
 import { useFinance } from '../context/FinanceContext';
 import { ContributionGraph } from '../components/journal/ContributionGraph';
-import { Calendar, ChevronLeft, ChevronRight, Save, Flame, Sparkles } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, Save, Flame, Sparkles, Shuffle, Trophy } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { motion, AnimatePresence } from 'framer-motion';
+import confetti from 'canvas-confetti';
 
 const HABITS = [
     { id: 'diet', label: 'Diet' },
@@ -15,6 +17,17 @@ const HABITS = [
     { id: 'md', label: 'Md' },
     { id: 'mood', label: 'Mood' },
     { id: 'social', label: 'Social' },
+];
+
+const PROMPTS = [
+    "What gave you energy today?",
+    "What is one thing you learned?",
+    "Who are you grateful for today?",
+    "What was the highlight of your day?",
+    "How did you move closer to your goals?",
+    "What is one thing you could have done better?",
+    "What are you excited about for tomorrow?",
+    "Did you step out of your comfort zone?",
 ];
 
 /**
@@ -33,8 +46,8 @@ const getRatingColor = (rating) => {
 };
 
 const getRatingLabel = (rating) => {
-    if (rating > 0) return `+${rating}`;
-    return `${rating}`;
+    if (rating > 0) return `+ ${ rating } `;
+    return `${ rating } `;
 };
 
 const Journal = () => {
@@ -67,43 +80,35 @@ const Journal = () => {
     const streaks = useMemo(() => {
         if (!journal) return {};
         const res = {};
-
-        // Create a map for fast lookup
-        const journalMap = new Map();
-        journal.forEach(j => journalMap.set(j.date, j));
+        const journalMap = new Map(journal.map(j => [j.date, j]));
 
         HABITS.forEach(h => {
             let streak = 0;
-            // Check backwards from Yesterday (or Today if today is done)
-            // Let's check from Today backwards.
-            const today = new Date();
-            // If today has a positive value, we count it. If not, we start from yesterday (to not break streak just because day isn't over).
-            // Simplification: Iterate backwards from today.
-
             let d = new Date();
-            // Safety: Limit check to 365 days
             for (let i = 0; i < 365; i++) {
                 const dateStr = d.toISOString().split('T')[0];
                 const entry = journalMap.get(dateStr);
                 const val = entry?.habits?.[h.id] || 0;
 
-                if (val > 0) {
-                    streak++;
-                } else if (i === 0 && val === 0) {
-                    // If it's today and we haven't done it yet, don't break streak, just ignore
-                    // But if we missed yesterday, streak is 0.
-                    // Wait, if today is 0, we continue to check yesterday.
-                    // If yesterday is 0, then streak is broken (0).
-                    continue;
-                } else {
-                    break;
-                }
+                if (val > 0) streak++;
+                else if (i === 0 && val === 0) { /* continue */ }
+                else break;
                 d.setDate(d.getDate() - 1);
             }
             res[h.id] = streak;
         });
         return res;
     }, [journal]);
+
+    // Calculate Daily Score
+    const flowScore = useMemo(() => {
+        let score = 0;
+        Object.values(entry.habits).forEach(v => score += v);
+        // Boost for completion (if all habits are non-zero)
+        const nonZeroCount = Object.values(entry.habits).filter(v => v !== 0).length;
+        if (nonZeroCount === HABITS.length) score += 5; // Completion bonus
+        return score;
+    }, [entry.habits]);
 
     const handleHabitClick = (id) => {
         setEntry(prev => {
@@ -129,7 +134,22 @@ const Journal = () => {
             date: selectedDate,
             ...entry
         });
-        // Add a little toast or visual feedback here ideally, for now button animation is enough?
+        // Confetti if good score!
+        if (flowScore > 5) {
+            confetti({
+                particleCount: 100,
+                spread: 70,
+                origin: { y: 0.6 }
+            });
+        }
+    };
+
+    const insertPrompt = () => {
+        const randomPrompt = PROMPTS[Math.floor(Math.random() * PROMPTS.length)];
+        setEntry(prev => ({
+            ...prev,
+            text: (prev.text ? prev.text + '\n\n' : '') + `** ${ randomPrompt }**\n`
+        }));
     };
 
     const shiftDate = (days) => {
@@ -160,13 +180,30 @@ const Journal = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 space-y-6">
+
+                    {/* DAILY SCORE CARD */}
+                    <div className="glass-panel p-6 flex items-center justify-between bg-gradient-to-r from-purple-900/20 to-blue-900/20">
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-full bg-yellow-500/20 flex items-center justify-center text-yellow-400">
+                                <Trophy size={24} />
+                            </div>
+                            <div>
+                                <h4 className="text-gray-400 text-xs uppercase font-bold tracking-wider">Flow Score</h4>
+                                <div className="text-2xl font-bold font-mono text-white">{flowScore > 0 ? `+ ${ flowScore } ` : flowScore}</div>
+                            </div>
+                        </div>
+                        <div className="text-right">
+                            <div className="text-xs text-gray-500">{flowScore > 10 ? 'Excellent Flow' : flowScore > 5 ? 'Good Flow' : 'Keep Going'}</div>
+                        </div>
+                    </div>
+
                     {/* Habits Grid */}
                     <div className="glass-panel p-6">
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-lg font-medium text-gray-300 font-heading">Daily Habits</h3>
                             <div className="text-xs text-gray-500 flex items-center gap-1">
                                 <Sparkles size={12} className="text-yellow-500" />
-                                <span>Tap to cycle intensity</span>
+                                <span>Tap to cycle</span>
                             </div>
                         </div>
 
@@ -216,6 +253,14 @@ const Journal = () => {
                     <div className="glass-panel p-6 flex flex-col h-[300px] relative overflow-hidden group">
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="text-lg font-medium text-gray-300 font-heading">Reflections</h3>
+                            <motion.button
+                                whileHover={{ scale: 1.1, rotate: 180 }}
+                                whileTap={{ scale: 0.9 }}
+                                onClick={insertPrompt}
+                                className="p-2 text-purple-400 hover:text-white transition-colors"
+                            >
+                                <Shuffle size={18} />
+                            </motion.button>
                         </div>
                         <textarea
                             className="flex-1 bg-transparent border-none outline-none resize-none text-lg leading-relaxed text-gray-200 placeholder-gray-600 custom-scrollbar z-10"
@@ -261,7 +306,7 @@ const Journal = () => {
                                     <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
                                         <span className="uppercase font-semibold tracking-wider">{habit.label}</span>
                                         <span className="font-mono text-gray-600">
-                                            {streaks[habit.id] > 0 ? `${streaks[habit.id]} day streak` : ''}
+                                            {streaks[habit.id] > 0 ? `${ streaks[habit.id] } day streak` : ''}
                                         </span>
                                     </div>
                                     <ContributionGraph
