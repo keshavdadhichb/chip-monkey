@@ -1,4 +1,3 @@
-```javascript
 import React, { useState, useEffect, useMemo } from 'react';
 import { useFinance } from '../context/FinanceContext';
 import { ContributionGraph } from '../components/journal/ContributionGraph';
@@ -46,8 +45,8 @@ const getRatingColor = (rating) => {
 };
 
 const getRatingLabel = (rating) => {
-    if (rating > 0) return `+ ${ rating } `;
-    return `${ rating } `;
+    if (rating > 0) return `+${rating}`;
+    return `${rating}`;
 };
 
 const Journal = () => {
@@ -148,7 +147,7 @@ const Journal = () => {
         const randomPrompt = PROMPTS[Math.floor(Math.random() * PROMPTS.length)];
         setEntry(prev => ({
             ...prev,
-            text: (prev.text ? prev.text + '\n\n' : '') + `** ${ randomPrompt }**\n`
+            text: (prev.text ? prev.text + '\n\n' : '') + `**${randomPrompt}**\n`
         }));
     };
 
@@ -189,7 +188,7 @@ const Journal = () => {
                             </div>
                             <div>
                                 <h4 className="text-gray-400 text-xs uppercase font-bold tracking-wider">Flow Score</h4>
-                                <div className="text-2xl font-bold font-mono text-white">{flowScore > 0 ? `+ ${ flowScore } ` : flowScore}</div>
+                                <div className="text-2xl font-bold font-mono text-white">{flowScore > 0 ? `+${flowScore}` : flowScore}</div>
                             </div>
                         </div>
                         <div className="text-right">
@@ -306,7 +305,7 @@ const Journal = () => {
                                     <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
                                         <span className="uppercase font-semibold tracking-wider">{habit.label}</span>
                                         <span className="font-mono text-gray-600">
-                                            {streaks[habit.id] > 0 ? `${ streaks[habit.id] } day streak` : ''}
+                                            {streaks[habit.id] > 0 ? `${streaks[habit.id]} day streak` : ''}
                                         </span>
                                     </div>
                                     <ContributionGraph
