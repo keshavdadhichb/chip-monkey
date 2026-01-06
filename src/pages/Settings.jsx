@@ -70,6 +70,29 @@ const Settings = () => {
                 )}
             </div>
 
+            <div className="glass-panel p-6 space-y-4">
+                <h3 className="text-lg font-medium text-white flex items-center gap-2">Security <span className="text-xs text-gray-500">(Optional)</span></h3>
+                <div>
+                    <label className="block text-sm text-gray-400 mb-2">Set 4-Digit PIN</label>
+                    <input
+                        type="password"
+                        placeholder="Leave empty to remove PIN"
+                        maxLength={4}
+                        className="premium-input w-32 text-center font-mono tracking-widest"
+                        onChange={(e) => {
+                            const val = e.target.value;
+                            if (val.length === 4) {
+                                localStorage.setItem('APP_PIN', val);
+                                alert('PIN Set!');
+                            } else if (val.length === 0) {
+                                localStorage.removeItem('APP_PIN');
+                            }
+                        }}
+                    />
+                    <p className="text-xs text-gray-600 mt-2">Enter 4 digits to enable Lock Screen. Clear to disable.</p>
+                </div>
+            </div>
+
             <div className="glass-panel p-6">
                 <h3 className="text-lg font-medium text-white">About</h3>
                 <p className="text-gray-400">FlowState v1.0.0</p>

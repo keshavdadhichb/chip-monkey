@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useFinance } from '../context/FinanceContext';
 import { ContributionGraph } from '../components/journal/ContributionGraph';
-import { Calendar, ChevronLeft, ChevronRight, Save, Flame, Sparkles, Shuffle, Trophy } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, Save, Flame, Sparkles, Shuffle, Trophy, Lock } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
@@ -58,6 +58,10 @@ const Journal = () => {
     });
     const [showGraphs, setShowGraphs] = useState(false);
 
+    // Locking Logic
+    const todayStr = new Date().toISOString().split('T')[0];
+    const isLocked = selectedDate !== todayStr;
+
     // Load entry
     useEffect(() => {
         if (!journal) return;
@@ -110,6 +114,8 @@ const Journal = () => {
     }, [entry.habits]);
 
     const handleHabitClick = (id) => {
+        if (isLocked) return; // Prevent editing if locked
+
         setEntry(prev => {
             const current = prev.habits[id] || 0;
             // Cycle: 0 -> 1 -> 2 -> 3 -> -2 -> -1 -> 0
@@ -170,8 +176,8 @@ const Journal = () => {
                 <div className="flex items-center gap-4 bg-black/20 p-2 rounded-xl border border-white/5 backdrop-blur-md">
                     <button onClick={() => shiftDate(-1)} className="p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors"><ChevronLeft size={20} /></button>
                     <div className="flex items-center gap-2 font-mono text-lg font-medium min-w-[140px] justify-center text-purple-200">
-                        <Calendar size={18} className="text-purple-500" />
-                        {selectedDate}
+                        {isLocked ? <Lock size={16} className="text-gray-500" /> : <Calendar size={18} className="text-purple-500" />}
+                        <span className={isLocked ? "text-gray-500" : ""}>{selectedDate}</span>
                     </div>
                     <button onClick={() => shiftDate(1)} className="p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors"><ChevronRight size={20} /></button>
                 </div>
@@ -201,8 +207,14 @@ const Journal = () => {
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-lg font-medium text-gray-300 font-heading">Daily Habits</h3>
                             <div className="text-xs text-gray-500 flex items-center gap-1">
-                                <Sparkles size={12} className="text-yellow-500" />
-                                <span>Tap to cycle</span>
+                                {isLocked ? (
+                                    <span className="text-gray-500 flex items-center gap-1"><Lock size={10} /> Read Only</span>
+                                ) : (
+                                    <>
+                                        <Sparkles size={12} className="text-yellow-500" />
+                                        <span>Tap to cycle</span>
+                                    </>
+                                )}
                             </div>
                         </div>
 
@@ -215,12 +227,13 @@ const Journal = () => {
                                     <motion.button
                                         key={h.id}
                                         layout
-                                        whileTap={{ scale: 0.95 }}
+                                        whileTap={!isLocked ? { scale: 0.95 } : {}}
                                         onClick={() => handleHabitClick(h.id)}
                                         className={cn(
                                             "relative flex flex-col items-center justify-center p-3 rounded-2xl border transition-all duration-300 min-h-[110px] overflow-hidden",
                                             getRatingColor(level),
-                                            level !== 0 && "text-white"
+                                            level !== 0 && "text-white",
+                                            isLocked && "cursor-not-allowed opacity-80"
                                         )}
                                     >
                                         {/* Background Blur Effect for "Glow" */}
@@ -251,35 +264,50 @@ const Journal = () => {
 
                     <div className="glass-panel p-6 flex flex-col h-[300px] relative overflow-hidden group">
                         <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-lg font-medium text-gray-300 font-heading">Reflections</h3>
-                            <motion.button
-                                whileHover={{ scale: 1.1, rotate: 180 }}
-                                whileTap={{ scale: 0.9 }}
-                                onClick={insertPrompt}
-                                className="p-2 text-purple-400 hover:text-white transition-colors"
-                            >
-                                <Shuffle size={18} />
-                            </motion.button>
+                            <div className="flex items-center gap-2">
+                                <h3 className="text-lg font-medium text-gray-300 font-heading">Reflections</h3>
+                                {isLocked && (
+                                    <span className="text-xs bg-white/10 px-2 py-0.5 rounded text-gray-400 font-mono flex items-center gap-1">
+                                        🔒 Locked
+                                    </span>
+                                )}
+                            </div>
+                            {!isLocked && (
+                                <motion.button
+                                    whileHover={{ scale: 1.1, rotate: 180 }}
+                                    whileTap={{ scale: 0.9 }}
+                                    onClick={insertPrompt}
+                                    className="p-2 text-purple-400 hover:text-white transition-colors"
+                                >
+                                    <Shuffle size={18} />
+                                </motion.button>
+                            )}
                         </div>
                         <textarea
-                            className="flex-1 bg-transparent border-none outline-none resize-none text-lg leading-relaxed text-gray-200 placeholder-gray-600 custom-scrollbar z-10"
-                            placeholder="How was your flow today?"
+                            className={cn(
+                                "flex-1 bg-transparent border-none outline-none resize-none text-lg leading-relaxed text-gray-200 placeholder-gray-600 custom-scrollbar z-10",
+                                isLocked && "opacity-70 cursor-not-allowed text-gray-400"
+                            )}
+                            readOnly={isLocked}
+                            placeholder={isLocked ? "Entry locked." : "How was your flow today?"}
                             value={entry.text}
                             onChange={(e) => setEntry(prev => ({ ...prev, text: e.target.value }))}
                         />
                         {/* Ambient Background for Text Area */}
                         <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-purple-500/5 rounded-full blur-3xl pointer-events-none group-hover:bg-purple-500/10 transition-colors duration-500" />
 
-                        <div className="flex justify-end pt-4 border-t border-white/5 z-10">
-                            <motion.button
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
-                                onClick={handleSave}
-                                className="premium-button"
-                            >
-                                <Save size={18} /> Save Entry
-                            </motion.button>
-                        </div>
+                        {!isLocked && (
+                            <div className="flex justify-end pt-4 border-t border-white/5 z-10">
+                                <motion.button
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    onClick={handleSave}
+                                    className="premium-button"
+                                >
+                                    <Save size={18} /> Save Entry
+                                </motion.button>
+                            </div>
+                        )}
                     </div>
                 </div>
 

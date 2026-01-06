@@ -137,20 +137,20 @@ export const QuickAddSheet = ({ isOpen, onClose }) => {
                     </div>
                 </div>
 
-                <div className="flex gap-3">
+                <div className="flex flex-col gap-3 mt-4">
                     <input
                         type="text"
-                        placeholder="Add a note..."
-                        className="flex-1 bg-white/5 rounded-xl px-4 outline-none text-sm"
+                        placeholder="Add a note (optional)..."
+                        className="w-full bg-white/5 rounded-xl px-4 py-3 outline-none text-sm"
                         value={formData.notes || ''}
                         onChange={e => setFormData({ ...formData, notes: e.target.value })}
                     />
                     <button
                         onClick={handleSave}
                         disabled={!formData.amount || !formData.category}
-                        className="w-16 h-14 bg-gradient-to-br from-purple-500 to-blue-600 rounded-xl flex items-center justify-center text-white disabled:opacity-50 disabled:grayscale"
+                        className="w-full py-4 bg-gradient-to-r from-purple-500 to-blue-600 rounded-xl font-bold text-lg text-white shadow-lg disabled:opacity-50 disabled:grayscale active:scale-95 transition-transform"
                     >
-                        <Check size={24} />
+                        Done
                     </button>
                 </div>
             </div>

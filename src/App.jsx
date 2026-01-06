@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AppLayout } from './components/layout/AppLayout';
 import { FinanceProvider } from './context/FinanceContext';
+import { LockScreen } from './components/auth/LockScreen';
 
 const Dashboard = React.lazy(() => import('./pages/Dashboard'));
 const Finance = React.lazy(() => import('./pages/Finance'));
@@ -12,20 +13,38 @@ function App() {
   return (
     <FinanceProvider>
       <Router>
-        <AppLayout>
-          <React.Suspense fallback={<div className="p-10">Loading...</div>}>
-            <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/finance" element={<Finance />} />
-              <Route path="/journal" element={<Journal />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </React.Suspense>
-        </AppLayout>
+        <AppContent />
       </Router>
     </FinanceProvider>
   );
 }
+
+const AppContent = () => {
+  const [isLocked, setIsLocked] = React.useState(!!localStorage.getItem('APP_PIN'));
+
+  // Re-check PIN on mount in case it was just set, but here main logic is initial state
+  React.useEffect(() => {
+    // If no PIN in storage, ensure unlocked
+    if (!localStorage.getItem('APP_PIN')) setIsLocked(false);
+  }, []);
+
+  if (isLocked) {
+    return <LockScreen onUnlock={() => setIsLocked(false)} />;
+  }
+
+  return (
+    <AppLayout>
+      <React.Suspense fallback={<div className="p-10">Loading...</div>}>
+        <Routes>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/finance" element={<Finance />} />
+          <Route path="/journal" element={<Journal />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </React.Suspense>
+    </AppLayout>
+  );
+};
 
 export default App;
